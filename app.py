@@ -4,6 +4,7 @@ import shap
 import joblib
 import pandas as pd
 import numpy as np
+from sklearn.preprocessing import StandardScaler
 
 app = Flask(__name__)
 
@@ -17,6 +18,12 @@ def predict():
 		json_ = request.json
 		query_df = pd.DataFrame(json_, index = [0])
 		query = query_df.drop(columns = ['patient_id'])
+		scaler = joblib.load('std_scaler.bin')
+		norm_data = query[['edvisitcount', 'dbp3rd']]
+		norm_data = scaler.fit_transform(norm_data)
+		normalize = pd.DataFrame(norm_data)
+		query['edvisitcount'] = normalize[0]
+		query['dbp3rd'] = normalize[1]
 #		query = pd.get_dummies(query_df)
 		prediction = model.predict_proba(query)
 #		print(prediction)
@@ -54,7 +61,7 @@ if __name__ == '__main__':
 	except:
 		port = 12345
 	model = joblib.load("clfLogisticRegression.pkl")
-	explainer = joblib.load('explainer_ver202207.pkl')
+	explainer = joblib.load('explainer.pkl')
 	print('Model loaded')
 #	from waitress import serve
 #	serve(app, host= "0.0.0.0", port = 8080)
